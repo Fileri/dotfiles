@@ -1,0 +1,24 @@
+# PAI Environment Configuration
+
+DA=Basic
+PAI_DIR={{ .chezmoi.homeDir }}/.Basic
+PAI_DATA_DIR={{ .chezmoi.homeDir }}/Basic
+TIME_ZONE=Europe/Oslo
+PAI_SOURCE_APP=Basic
+PROJECT_DIRS={{ .chezmoi.homeDir }}/Projects
+
+# Vertex AI (for Claude and Image Generation)
+ANTHROPIC_VERTEX_PROJECT_ID=ai-automat-id-play-38355
+ANTHROPIC_VERTEX_REGION=europe-west1
+CLOUD_ML_REGION=europe-west1
+
+# Voice (ElevenLabs)
+# ELEVENLABS_API_KEY=
+# ELEVENLABS_VOICE_ID=
+
+# Google API Key (for Gemini and other services)
+{{ if stat (joinPath .chezmoi.homeDir ".config/op/config") -}}
+GOOGLE_API_KEY={{ onepasswordRead "op://Development/Gemini API/credential" }}
+{{- else -}}
+# GOOGLE_API_KEY=
+{{- end }}
