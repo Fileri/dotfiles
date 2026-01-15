@@ -21,9 +21,5 @@
   },
   "elevenLabsApiKey": "",
   "elevenLabsVoiceId": "",
-{{ if stat (joinPath .chezmoi.homeDir ".config/op/config") -}}
-  "googleApiKey": "{{ onepasswordRead "op://Development/Gemini API/credential" }}"
-{{- else -}}
   "googleApiKey": ""
-{{- end }}
 }
