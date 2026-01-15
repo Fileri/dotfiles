@@ -108,17 +108,6 @@ if [[ "$OS" == "macos" ]]; then
     success "Application default credentials exist"
   fi
 
-  # Gemini CLI auth
-  echo ""
-  if command -v gemini &> /dev/null; then
-    if ! gemini auth status &>/dev/null; then
-      info "Authenticating Gemini CLI..."
-      gemini auth login
-    else
-      success "Gemini CLI already authenticated"
-    fi
-  fi
-
   # Arc browser reminder
   echo ""
   echo -e "${BLUE}┌─────────────────────────────────────────────────────────────┐${NC}"
