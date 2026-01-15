@@ -187,13 +187,34 @@ fi
 # =============================================================================
 
 info "Applying dotfiles with chezmoi..."
+
+# Check if chezmoi config already has name/email
+CHEZMOI_CONFIG="$HOME/.config/chezmoi/chezmoi.toml"
+if [[ ! -f "$CHEZMOI_CONFIG" ]] || ! grep -q "name = " "$CHEZMOI_CONFIG" 2>/dev/null; then
+  echo ""
+  read -p "Your full name: " USER_NAME
+  read -p "Your email address: " USER_EMAIL
+
+  mkdir -p "$(dirname "$CHEZMOI_CONFIG")"
+  cat > "$CHEZMOI_CONFIG" << EOF
+[data]
+    name = "$USER_NAME"
+    email = "$USER_EMAIL"
+
+[onepassword]
+    command = "op"
+    prompt = true
+EOF
+  success "Created chezmoi config"
+fi
+
 if [[ -d "$DOTFILES_DIR" ]]; then
-  chezmoi init --source="$DOTFILES_DIR" --prompt --force
+  chezmoi init --source="$DOTFILES_DIR" --force
   chezmoi apply --source="$DOTFILES_DIR" --force
 else
   # Fresh machine - clone from GitHub
   read -p "Enter your GitHub username for dotfiles repo: " GITHUB_USER
-  chezmoi init --prompt --force "$GITHUB_USER/dotfiles"
+  chezmoi init --force "$GITHUB_USER/dotfiles"
   chezmoi apply --force
 fi
 
