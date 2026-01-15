@@ -9,24 +9,39 @@ Cross-platform terminal configuration managed with chezmoi.
 - **Editor:** Neovim + lazy.nvim
 - **Theme:** Catppuccin Mocha
 - **Font:** JetBrains Mono Nerd Font
+- **Secrets:** 1Password CLI
 
 ## Structure
 ```
-home/
-├── dot_config/
-│   ├── ghostty/config
-│   ├── tmux/tmux.conf
-│   ├── nvim/
-│   └── starship.toml
-├── dot_zshrc.tmpl
-├── dot_gitconfig.tmpl
-└── dot_gitignore_global
+.
+├── install.sh              # Bootstrap script (macOS + Linux)
+├── Brewfile                # macOS packages (declarative)
+├── macos/
+│   └── defaults.sh         # macOS system preferences
+├── home/
+│   ├── dot_config/
+│   │   ├── ghostty/config
+│   │   ├── tmux/tmux.conf
+│   │   ├── nvim/
+│   │   └── starship.toml
+│   ├── private_dot_ssh/
+│   │   └── config.tmpl      # 1Password SSH agent
+│   ├── dot_zshrc.tmpl
+│   ├── dot_gitconfig.tmpl
+│   └── dot_gitignore_global
+└── .chezmoi.toml.tmpl      # Chezmoi config with 1Password
 ```
 
-## Key Features
-- Claude Code optimized (auto-reload, diffview.nvim)
-- Cross-platform (macOS + Linux/GCE)
-- Seamless tmux + Neovim navigation
+## Bootstrap (Fresh Machine)
+
+```bash
+# One-liner (after pushing to GitHub)
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/YOUR_USER/dotfiles/main/install.sh)"
+
+# Or clone and run
+git clone https://github.com/YOUR_USER/dotfiles ~/Code/dotfiles
+cd ~/Code/dotfiles && ./install.sh
+```
 
 ## Commands
 ```bash
@@ -34,6 +49,18 @@ home/
 chezmoi apply             # Apply dotfiles
 chezmoi edit ~/.zshrc     # Edit config
 chezmoi update            # Pull and apply updates
+```
+
+## 1Password Secrets
+
+Secrets are managed via 1Password CLI. In templates:
+```
+{{ onepasswordRead "op://Vault/Item/field" }}
+```
+
+Example in `.zshrc.tmpl`:
+```bash
+export OPENAI_API_KEY="{{ onepasswordRead "op://Development/OpenAI/api-key" }}"
 ```
 
 ## Notes

@@ -1,0 +1,18 @@
+# SSH Configuration
+
+{{- if eq .chezmoi.os "darwin" }}
+# 1Password SSH Agent
+Host *
+    IdentityAgent "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
+{{- end }}
+
+# Add host-specific configs below
+# Example:
+# Host github.com
+#     User git
+#     IdentityFile ~/.ssh/github
+
+# Host myserver
+#     HostName server.example.com
+#     User erik
+#     Port 22

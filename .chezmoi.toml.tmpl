@@ -6,3 +6,13 @@
 {{- else }}
     os = "linux"
 {{- end }}
+
+# 1Password integration
+# Set to true after running: op signin
+[onepassword]
+    command = "op"
+    prompt = true
+
+# Example usage in templates:
+# {{ onepasswordRead "op://Private/GitHub Token/credential" }}
+# {{ onepasswordRead "op://Development/OpenAI/api-key" }}

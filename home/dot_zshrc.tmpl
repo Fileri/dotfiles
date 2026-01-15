@@ -19,6 +19,10 @@ export OS_TYPE="linux"
 {{- end }}
 
 export PATH="$HOME/.local/bin:$HOME/bin:$PATH"
+export PATH="$HOME/go/bin:$PATH"
+{{- if eq .chezmoi.os "darwin" }}
+export PATH="$HOME/Library/Python/3.9/bin:$PATH"
+{{- end }}
 
 # =============================================================================
 # Environment
@@ -30,6 +34,38 @@ export LANG="en_US.UTF-8"
 export HISTSIZE=50000
 export SAVEHIST=50000
 export HISTFILE="$HOME/.zsh_history"
+export HOMEBREW_NO_ENV_HINTS=1
+
+# =============================================================================
+# Secrets (via 1Password)
+# Run 'chezmoi apply' after 'op signin' to populate
+# =============================================================================
+
+{{ if stat (joinPath .chezmoi.homeDir ".config/op/config") -}}
+{{ $geminiKey := onepasswordRead "op://Development/Gemini API/credential" -}}
+export GEMINI_API_KEY="{{ $geminiKey }}"
+export GOOGLE_API_KEY="{{ $geminiKey }}"
+{{- end }}
+
+# =============================================================================
+# AI / Claude Configuration
+# =============================================================================
+
+export GEMINI_MODEL="gemini-2.5-pro"
+export GEMINI_MODEL_FAST="gemini-2.5-flash"
+
+# Vertex AI (Claude)
+export CLAUDE_CODE_USE_VERTEX=1
+export ANTHROPIC_VERTEX_PROJECT_ID="ai-automat-id-play-38355"
+export ANTHROPIC_VERTEX_REGION="europe-west1"
+export CLOUD_ML_REGION="europe-west1"
+export CLOUDSDK_PYTHON_SITEPACKAGES=1
+
+# PAI (Personal AI Infrastructure)
+export PAI_DIR="$HOME/.claude"
+export DA="Basic"
+export DA_COLOR="purple"
+export ENGINEER_NAME="{{ .name }}"
 
 # =============================================================================
 # Options
@@ -64,6 +100,8 @@ alias ll="ls -lah"
 alias la="ls -la"
 alias v="nvim"
 alias vim="nvim"
+alias c="clear"
+alias reload="source ~/.zshrc"
 
 # Git
 alias g="git"
@@ -81,8 +119,8 @@ alias ta="tmux attach -t"
 alias tn="tmux new -s"
 alias tl="tmux list-sessions"
 
-alias c="clear"
-alias reload="source ~/.zshrc"
+# Claude
+alias b="claude"
 
 {{- if eq .chezmoi.os "darwin" }}
 alias brewup="brew update && brew upgrade && brew cleanup"
@@ -91,11 +129,74 @@ command -v gls &> /dev/null && alias ls="gls --color=auto"
 alias open="xdg-open"
 {{- end }}
 
+# Markdown (full width display)
+alias glow='glow -w $(tput cols)'
+
 # =============================================================================
 # Functions
 # =============================================================================
 
 mkcd() { mkdir -p "$1" && cd "$1"; }
+
+# Open most recently modified markdown file
+glast() {
+  local latest=$(ls -t *.md 2>/dev/null | head -1)
+  if [[ -n "$latest" ]]; then
+    glow "$latest"
+  else
+    echo "No markdown files found in current directory"
+  fi
+}
+
+# Open markdown in browser with GitHub-style rendering
+mdview() {
+  local pid=$(lsof -ti:6419 2>/dev/null)
+  [[ -n "$pid" ]] && kill $pid 2>/dev/null && sleep 0.5
+
+  if [[ -f "$1" ]]; then
+    echo "Opening $1 in browser..."
+    echo "Server running at http://localhost:6419"
+    echo "Press Ctrl+C to stop"
+    grip "$1" --browser --quiet
+  else
+    echo "Usage: mdview <file.md>"
+  fi
+}
+
+# Open most recent markdown in browser
+mdlast() {
+  local pid=$(lsof -ti:6419 2>/dev/null)
+  [[ -n "$pid" ]] && kill $pid 2>/dev/null && sleep 0.5
+
+  local latest=$(ls -t *.md 2>/dev/null | head -1)
+  if [[ -n "$latest" ]]; then
+    echo "Opening $latest in browser..."
+    echo "Server running at http://localhost:6419"
+    echo "Press Ctrl+C to stop"
+    grip "$latest" --browser --quiet
+  else
+    echo "No markdown files found in current directory"
+  fi
+}
+
+# Fabric deep research
+deep() {
+  echo "$1" | fabric -m deep-research-pro-preview-12-2025 --pattern extract_wisdom
+}
+
+# INWX CLI wrapper (credentials from 1Password)
+{{- if eq .chezmoi.os "darwin" }}
+inwx() {
+  if command -v op &> /dev/null; then
+    inwxcli \
+      --username "$(op read 'op://Development/INWX/username')" \
+      --password "$(op read 'op://Development/INWX/password')" \
+      "$@"
+  else
+    echo "1Password CLI not available"
+  fi
+}
+{{- end }}
 
 # =============================================================================
 # Tools
@@ -115,10 +216,21 @@ fi
 # Zoxide
 command -v zoxide &> /dev/null && eval "$(zoxide init zsh)" && alias cd="z"
 
-# Starship
+# ZSH plugins
+{{- if eq .chezmoi.os "darwin" }}
+[[ -f "$(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh" ]] && \
+  source "$(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh"
+[[ -f "$(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ]] && \
+  source "$(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
+{{- end }}
+
+# Bun completions
+[[ -s "$HOME/.bun/_bun" ]] && source "$HOME/.bun/_bun"
+
+# Starship prompt (load last)
 command -v starship &> /dev/null && eval "$(starship init zsh)"
 
-# Local config
+# Local overrides (not managed by chezmoi)
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
 
 {{- if eq .chezmoi.os "linux" }}

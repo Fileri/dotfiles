@@ -10,6 +10,8 @@ info() { echo -e "${BLUE}[INFO]${NC} $1"; }
 success() { echo -e "${GREEN}[OK]${NC} $1"; }
 error() { echo -e "${RED}[ERROR]${NC} $1"; exit 1; }
 
+DOTFILES_DIR="${DOTFILES_DIR:-$HOME/Code/dotfiles}"
+
 # Detect OS
 case "$(uname -s)" in
   Darwin) OS="macos" ;;
@@ -24,6 +26,14 @@ info "Detected: $OS"
 # =============================================================================
 
 if [[ "$OS" == "macos" ]]; then
+  # Xcode Command Line Tools
+  if ! xcode-select -p &> /dev/null; then
+    info "Installing Xcode Command Line Tools..."
+    xcode-select --install
+    echo "Press any key after installation completes..."
+    read -n 1
+  fi
+
   # Homebrew
   if ! command -v brew &> /dev/null; then
     info "Installing Homebrew..."
@@ -31,12 +41,96 @@ if [[ "$OS" == "macos" ]]; then
     eval "$(/opt/homebrew/bin/brew shellenv 2>/dev/null || /usr/local/bin/brew shellenv)"
   fi
 
-  info "Installing packages..."
-  brew install neovim tmux git ripgrep fd fzf lazygit zoxide starship chezmoi
-  brew install --cask ghostty font-jetbrains-mono-nerd-font
+  # Install from Brewfile
+  info "Installing packages from Brewfile..."
+  brew bundle --file="$DOTFILES_DIR/Brewfile"
 
-  # FZF setup
+  # FZF key bindings
   "$(brew --prefix)/opt/fzf/install" --key-bindings --completion --no-update-rc --no-bash --no-fish 2>/dev/null || true
+
+  # 1Password CLI setup
+  if command -v op &> /dev/null; then
+    if ! op account list &>/dev/null; then
+      echo ""
+      echo -e "${BLUE}┌─────────────────────────────────────────────────────────────┐${NC}"
+      echo -e "${BLUE}│${NC}  ${GREEN}1Password Setup Required${NC}                                   ${BLUE}│${NC}"
+      echo -e "${BLUE}├─────────────────────────────────────────────────────────────┤${NC}"
+      echo -e "${BLUE}│${NC}  1. Open 1Password app                                       ${BLUE}│${NC}"
+      echo -e "${BLUE}│${NC}  2. Settings → Developer → Enable 'CLI integration'         ${BLUE}│${NC}"
+      echo -e "${BLUE}│${NC}  3. Settings → Developer → Enable 'SSH Agent'               ${BLUE}│${NC}"
+      echo -e "${BLUE}│${NC}  4. Run: op signin                                          ${BLUE}│${NC}"
+      echo -e "${BLUE}└─────────────────────────────────────────────────────────────┘${NC}"
+      echo ""
+      read -p "Press any key after completing 1Password setup..." -n 1 -r
+      echo
+    else
+      success "1Password CLI connected"
+    fi
+  fi
+
+  # macOS defaults (optional)
+  read -p "Apply macOS system preferences? [y/N] " -n 1 -r
+  echo
+  if [[ $REPLY =~ ^[Yy]$ ]]; then
+    "$DOTFILES_DIR/macos/defaults.sh"
+  fi
+
+  # Raycast setup reminder
+  echo ""
+  echo -e "${BLUE}┌─────────────────────────────────────────────────────────────┐${NC}"
+  echo -e "${BLUE}│${NC}  ${GREEN}Raycast Setup${NC}                                              ${BLUE}│${NC}"
+  echo -e "${BLUE}├─────────────────────────────────────────────────────────────┤${NC}"
+  echo -e "${BLUE}│${NC}  1. Open Raycast                                             ${BLUE}│${NC}"
+  echo -e "${BLUE}│${NC}  2. Sign in with your Raycast account                        ${BLUE}│${NC}"
+  echo -e "${BLUE}│${NC}  3. Settings → Cloud Sync → Enable                           ${BLUE}│${NC}"
+  echo -e "${BLUE}└─────────────────────────────────────────────────────────────┘${NC}"
+  echo ""
+  read -p "Press any key after completing Raycast setup..." -n 1 -r
+  echo
+
+  # Google Cloud auth (for Vertex AI / Claude)
+  echo ""
+  echo -e "${BLUE}┌─────────────────────────────────────────────────────────────┐${NC}"
+  echo -e "${BLUE}│${NC}  ${GREEN}Google Cloud Setup (for Claude via Vertex AI)${NC}              ${BLUE}│${NC}"
+  echo -e "${BLUE}└─────────────────────────────────────────────────────────────┘${NC}"
+  if ! gcloud auth list 2>/dev/null | grep -q "ACTIVE"; then
+    info "Authenticating with Google Cloud..."
+    gcloud auth login
+  else
+    success "Google Cloud already authenticated"
+  fi
+
+  # Application default credentials for Vertex AI
+  if [[ ! -f "$HOME/.config/gcloud/application_default_credentials.json" ]]; then
+    info "Setting up application default credentials for Vertex AI..."
+    gcloud auth application-default login
+  else
+    success "Application default credentials exist"
+  fi
+
+  # Gemini CLI auth
+  echo ""
+  if command -v gemini &> /dev/null; then
+    if ! gemini auth status &>/dev/null; then
+      info "Authenticating Gemini CLI..."
+      gemini auth login
+    else
+      success "Gemini CLI already authenticated"
+    fi
+  fi
+
+  # Arc browser reminder
+  echo ""
+  echo -e "${BLUE}┌─────────────────────────────────────────────────────────────┐${NC}"
+  echo -e "${BLUE}│${NC}  ${GREEN}Arc Browser Setup${NC}                                          ${BLUE}│${NC}"
+  echo -e "${BLUE}├─────────────────────────────────────────────────────────────┤${NC}"
+  echo -e "${BLUE}│${NC}  1. Open Arc                                                  ${BLUE}│${NC}"
+  echo -e "${BLUE}│${NC}  2. Sign in with your Arc account                            ${BLUE}│${NC}"
+  echo -e "${BLUE}│${NC}  3. Your spaces and tabs will sync automatically             ${BLUE}│${NC}"
+  echo -e "${BLUE}└─────────────────────────────────────────────────────────────┘${NC}"
+  echo ""
+  read -p "Press any key to continue..." -n 1 -r
+  echo
 fi
 
 # =============================================================================
@@ -57,6 +151,16 @@ if [[ "$OS" == "linux" ]]; then
 
     # chezmoi
     command -v chezmoi &> /dev/null || sh -c "$(curl -fsLS get.chezmoi.io)" -- -b ~/.local/bin
+
+    # 1Password CLI
+    if ! command -v op &> /dev/null; then
+      info "Installing 1Password CLI..."
+      curl -sS https://downloads.1password.com/linux/keys/1password.asc | \
+        sudo gpg --dearmor --output /usr/share/keyrings/1password-archive-keyring.gpg
+      echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/1password-archive-keyring.gpg] https://downloads.1password.com/linux/debian/$(dpkg --print-architecture) stable main" | \
+        sudo tee /etc/apt/sources.list.d/1password.list
+      sudo apt update && sudo apt install -y 1password-cli
+    fi
   fi
 
   # Nerd Font
@@ -69,19 +173,19 @@ if [[ "$OS" == "linux" ]]; then
     rm JetBrainsMono.zip
     fc-cache -fv
   }
-  cd -
+  cd - > /dev/null
 fi
 
 # =============================================================================
 # Common
 # =============================================================================
 
-# TPM
+# TPM (tmux plugin manager)
 info "Installing tmux plugin manager..."
 TPM_DIR="$HOME/.tmux/plugins/tpm"
 [[ ! -d "$TPM_DIR" ]] && git clone https://github.com/tmux-plugins/tpm "$TPM_DIR"
 
-# Set zsh as default
+# Set zsh as default shell
 if [[ "$SHELL" != *"zsh"* ]] && command -v zsh &> /dev/null; then
   info "Setting zsh as default shell..."
   ZSH_PATH=$(which zsh)
@@ -89,10 +193,26 @@ if [[ "$SHELL" != *"zsh"* ]] && command -v zsh &> /dev/null; then
   chsh -s "$ZSH_PATH"
 fi
 
+# =============================================================================
+# Apply dotfiles with chezmoi
+# =============================================================================
+
+info "Applying dotfiles with chezmoi..."
+if [[ -d "$DOTFILES_DIR" ]]; then
+  chezmoi init --source="$DOTFILES_DIR" --apply
+else
+  # Fresh machine - clone from GitHub
+  read -p "Enter your GitHub username for dotfiles repo: " GITHUB_USER
+  chezmoi init --apply "$GITHUB_USER/dotfiles"
+fi
+
 success "Installation complete!"
 echo ""
 echo "Next steps:"
-echo "  1. chezmoi init --apply YOUR_GITHUB_USERNAME/dotfiles"
-echo "  2. source ~/.zshrc"
-echo "  3. tmux → Ctrl-a I (install plugins)"
-echo "  4. nvim (plugins auto-install)"
+echo "  1. source ~/.zshrc                        # Reload shell (or restart terminal)"
+echo "  2. tmux → Ctrl-a I                        # Install tmux plugins"
+echo "  3. nvim                                   # Plugins auto-install"
+echo ""
+echo "1Password items needed for secrets (if not already created):"
+echo "  - Development/Gemini API    (credential) → GEMINI_API_KEY & GOOGLE_API_KEY"
+echo "  - Development/INWX          (username, password) → inwx() function"
