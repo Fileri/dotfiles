@@ -2,7 +2,6 @@
 # Usage: brew bundle --file=~/Code/dotfiles/Brewfile
 
 # Taps
-tap "homebrew/bundle"
 tap "oven-sh/bun"
 
 # =============================================================================
