@@ -308,9 +308,13 @@ if [[ "$OS" == "macos" ]]; then
       git clone git@github.com:Fileri/pai-installer.git "$PAI_INSTALLER_DIR"
     fi
 
-    # Check if config.json exists (chezmoi should have created it)
+    # Apply chezmoi to create config.json
+    info "Generating PAI config.json..."
+    chezmoi apply
+
+    # Check if config.json exists
     if [[ ! -f "$PAI_INSTALLER_DIR/config.json" ]]; then
-      error "PAI config.json not found. Chezmoi should have created it at $PAI_INSTALLER_DIR/config.json"
+      error "PAI config.json not found at $PAI_INSTALLER_DIR/config.json"
     fi
 
     # Run PAI installer
