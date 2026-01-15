@@ -299,9 +299,13 @@ if [[ "$OS" == "macos" ]]; then
     if [[ ! -d "$PAI_INSTALLER_DIR" ]]; then
       info "Cloning PAI installer..."
       git clone git@github.com:Fileri/pai-installer.git "$PAI_INSTALLER_DIR"
-    else
+    elif [[ -d "$PAI_INSTALLER_DIR/.git" ]]; then
       info "PAI installer already exists, pulling latest..."
       git -C "$PAI_INSTALLER_DIR" pull
+    else
+      info "PAI installer directory exists but is not a git repo, removing and cloning..."
+      rm -rf "$PAI_INSTALLER_DIR"
+      git clone git@github.com:Fileri/pai-installer.git "$PAI_INSTALLER_DIR"
     fi
 
     # Check if config.json exists (chezmoi should have created it)
