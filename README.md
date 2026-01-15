@@ -15,18 +15,28 @@ Cross-platform terminal configuration managed with chezmoi, with 1Password secre
 
 ## Quick Start
 
-### Fresh Machine (One-Liner)
+### Fresh Machine
+
+> **Note:** Use HTTPS for initial clone - SSH won't work until 1Password is set up.
 
 ```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/YOUR_USER/dotfiles/main/install.sh)"
-```
-
-### Existing Machine
-
-```bash
-git clone https://github.com/YOUR_USER/dotfiles ~/Code/dotfiles
+# Clone via HTTPS (SSH keys not available yet)
+git clone https://github.com/Fileri/dotfiles ~/Code/dotfiles
 cd ~/Code/dotfiles
 ./install.sh
+```
+
+After installation, switch to SSH:
+
+```bash
+cd ~/Code/dotfiles
+git remote set-url origin git@github.com:Fileri/dotfiles.git
+```
+
+### One-Liner (Alternative)
+
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Fileri/dotfiles/main/install.sh)"
 ```
 
 ## What the Install Script Does
@@ -61,13 +71,16 @@ cd ~/Code/dotfiles
 
 ## 1Password Setup
 
-The install script will prompt you to set up 1Password CLI:
+> **Note:** These steps require manual action in the GUI - they cannot be automated for security reasons.
+
+The install script will pause and prompt you to:
 
 1. Open **1Password app**
 2. Go to **Settings → Developer**
 3. Enable **"Integrate with 1Password CLI"**
 4. Enable **"SSH Agent"**
-5. Run `op signin` in terminal
+5. When prompted about SSH config, click **"Edit Automatically"**
+6. Run `op signin` in terminal
 
 ### Required 1Password Items
 
