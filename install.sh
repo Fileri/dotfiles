@@ -107,6 +107,17 @@ if [[ "$OS" == "macos" ]]; then
     success "Google Cloud already authenticated"
   fi
 
+  # Set GCloud project for Vertex AI
+  info "Configuring GCloud project..."
+  gcloud config set project ai-automat-id-play-38355
+  gcloud config set compute/region europe-west1
+
+  # Set active account if needed
+  if ! gcloud config get-value account | grep -q "erik.fillipsveen@elvia.no"; then
+    gcloud config set account erik.fillipsveen@elvia.no
+  fi
+  success "GCloud project configured"
+
   # Application default credentials for Vertex AI
   if [[ ! -f "$HOME/.config/gcloud/application_default_credentials.json" ]]; then
     info "Setting up application default credentials for Vertex AI..."
