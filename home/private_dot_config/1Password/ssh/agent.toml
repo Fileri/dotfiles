@@ -1,0 +1,9 @@
+# 1Password SSH Agent Configuration
+# Keys are offered to SSH servers in the order listed
+
+[[ssh-keys]]
+item = "GitHub"
+vault = "Development"
+
+[[ssh-keys]]
+vault = "Private"
