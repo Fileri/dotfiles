@@ -31,10 +31,15 @@ scrollback-limit = 50000
 # Keybindings for tmux integration
 keybind = cmd+t=text:\x01\x63
 keybind = cmd+w=text:\x01\x78
-keybind = cmd+1=text:\x01\x31
-keybind = cmd+2=text:\x01\x32
-keybind = cmd+3=text:\x01\x33
-keybind = cmd+4=text:\x01\x34
-keybind = cmd+5=text:\x01\x35
+keybind = cmd+digit_1=unbind
+keybind = cmd+digit_2=unbind
+keybind = cmd+digit_3=unbind
+keybind = cmd+digit_4=unbind
+keybind = cmd+digit_5=unbind
+keybind = cmd+digit_1=text:\x01\x31
+keybind = cmd+digit_2=text:\x01\x32
+keybind = cmd+digit_3=text:\x01\x33
+keybind = cmd+digit_4=text:\x01\x34
+keybind = cmd+digit_5=text:\x01\x35
 keybind = cmd+d=text:\x01\x7c
 keybind = cmd+shift+d=text:\x01\x2d
