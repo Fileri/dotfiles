@@ -66,6 +66,13 @@ if [[ "$OS" == "macos" ]]; then
     else
       success "1Password CLI connected"
     fi
+
+    # Verify required 1Password items exist
+    info "Verifying 1Password secrets..."
+    if ! op read "op://Development/Gemini API/credential" &>/dev/null; then
+      error "Missing 1Password item: Development/Gemini API (credential field)\nCreate this item in 1Password before continuing."
+    fi
+    success "1Password secrets verified"
   fi
 
   # macOS defaults (optional)
@@ -218,16 +225,28 @@ else
   chezmoi apply --force
 fi
 
+# Verify dotfiles were applied successfully
+info "Verifying dotfiles configuration..."
+if [[ ! -f "$HOME/.zshrc" ]]; then
+  error "Failed to generate .zshrc - chezmoi apply may have failed"
+fi
+
+# Verify GOOGLE_API_KEY is in .zshrc
+if ! grep -q "export GOOGLE_API_KEY=" "$HOME/.zshrc"; then
+  error "GOOGLE_API_KEY not found in .zshrc - check 1Password connection"
+fi
+
+success "Dotfiles verified - GOOGLE_API_KEY configured"
 success "Installation complete!"
+echo ""
+echo -e "${GREEN}✓ Environment variables configured:${NC}"
+echo "  - GOOGLE_API_KEY / GEMINI_API_KEY"
 echo ""
 echo "Next steps:"
 echo "  1. source ~/.zshrc                        # Reload shell (or restart terminal)"
-echo "  2. tmux → Ctrl-a I                        # Install tmux plugins"
-echo "  3. nvim                                   # Plugins auto-install"
+echo "  2. echo \$GOOGLE_API_KEY                  # Verify API key is loaded"
+echo "  3. tmux → Ctrl-a I                        # Install tmux plugins"
+echo "  4. nvim                                   # Plugins auto-install"
 echo ""
 echo "Switch dotfiles repo to SSH (if cloned via HTTPS):"
 echo "  cd ~/Code/dotfiles && git remote set-url origin git@github.com:Fileri/dotfiles.git"
-echo ""
-echo "1Password items needed for secrets (if not already created):"
-echo "  - Development/Gemini API    (credential) → GEMINI_API_KEY & GOOGLE_API_KEY"
-echo "  - Development/INWX          (username, password) → inwx() function"
