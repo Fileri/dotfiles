@@ -196,6 +196,48 @@ inwx() {
     echo "1Password CLI not available"
   fi
 }
+
+# SSH to ai-console via IAP tunnel
+ai-console() {
+  gcloud compute ssh ai-console \
+    --tunnel-through-iap \
+    --zone=europe-west1-b \
+    --project=ai-automat-id-play-38355
+}
+
+# Mutagen sync management for ai-console
+ai-console-sync() {
+  local action="${1:-status}"
+  local session_name="ai-console"
+
+  case "$action" in
+    start)
+      echo "Starting mutagen sync to ai-console..."
+      mutagen sync create \
+        ~/Projects \
+        ai-console:~/Projects \
+        --name="$session_name" \
+        --ignore=".git,node_modules,.DS_Store,*.pyc,__pycache__" \
+        --sync-mode=two-way-resolved
+      ;;
+    stop)
+      mutagen sync terminate "$session_name"
+      ;;
+    status)
+      mutagen sync list "$session_name"
+      ;;
+    monitor)
+      mutagen sync monitor "$session_name"
+      ;;
+    *)
+      echo "Usage: ai-console-sync {start|stop|status|monitor}"
+      echo "  start   - Start mutagen sync"
+      echo "  stop    - Stop mutagen sync"
+      echo "  status  - Show sync status (default)"
+      echo "  monitor - Monitor sync in real-time"
+      ;;
+  esac
+}
 {{- end }}
 
 # =============================================================================

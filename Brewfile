@@ -45,6 +45,7 @@ brew "python"
 # =============================================================================
 
 cask "gcloud-cli"
+brew "mutagen-io/mutagen/mutagen"  # File synchronization
 
 # =============================================================================
 # Security & Secrets
