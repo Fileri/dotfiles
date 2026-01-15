@@ -310,7 +310,7 @@ if [[ "$OS" == "macos" ]]; then
 
     # Apply chezmoi to create config.json
     info "Generating PAI config.json..."
-    chezmoi apply --force
+    chezmoi apply --force --source="$DOTFILES_DIR"
 
     # Check if config.json exists
     if [[ ! -f "$PAI_INSTALLER_DIR/config.json" ]]; then
