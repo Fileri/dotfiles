@@ -3,6 +3,7 @@
 
 # Taps
 tap "homebrew/bundle"
+tap "oven-sh/bun"
 
 # =============================================================================
 # CLI Tools
@@ -36,7 +37,7 @@ brew "grip"         # GitHub-style markdown preview
 # =============================================================================
 
 brew "node"
-brew "bun"
+brew "oven-sh/bun/bun"
 brew "go"
 brew "python"
 
