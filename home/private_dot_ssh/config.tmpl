@@ -6,12 +6,13 @@ Host *
     IdentityAgent "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
 {{- end }}
 
-# Add host-specific configs below
-# Example:
-# Host github.com
-#     User git
-#     IdentityFile ~/.ssh/github
+# GitHub (using port 443 for networks that block port 22)
+Host github.com
+    HostName ssh.github.com
+    Port 443
+    User git
 
+# Add host-specific configs below
 # Host myserver
 #     HostName server.example.com
 #     User erik
