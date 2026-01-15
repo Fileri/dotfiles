@@ -227,13 +227,18 @@ EOF
 fi
 
 if [[ -d "$DOTFILES_DIR" ]]; then
-  chezmoi init --source="$DOTFILES_DIR" --force
-  chezmoi apply --source="$DOTFILES_DIR" --force
+  # Local dotfiles directory exists
+  if [[ -d "$HOME/.local/share/chezmoi" ]]; then
+    info "Chezmoi already initialized, re-initializing from source..."
+    chezmoi init --apply --source="$DOTFILES_DIR"
+  else
+    info "Initializing chezmoi from local dotfiles..."
+    chezmoi init --apply --source="$DOTFILES_DIR"
+  fi
 else
   # Fresh machine - clone from GitHub
   read -p "Enter your GitHub username for dotfiles repo: " GITHUB_USER
-  chezmoi init --force "$GITHUB_USER/dotfiles"
-  chezmoi apply --force
+  chezmoi init --apply "$GITHUB_USER/dotfiles"
 fi
 
 # Verify dotfiles were applied successfully
