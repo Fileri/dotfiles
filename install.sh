@@ -148,12 +148,17 @@ if [[ "$OS" == "macos" ]]; then
       brew install --cask tailscale
     fi
 
-    if ! tailscale status &>/dev/null; then
+    # Open Tailscale app (required for daemon to start)
+    open -a Tailscale 2>/dev/null || true
+    sleep 2
+
+    # Check status with timeout to avoid hanging
+    if ! timeout 3 tailscale status &>/dev/null; then
       echo ""
       echo -e "${BLUE}┌─────────────────────────────────────────────────────────────┐${NC}"
       echo -e "${BLUE}│${NC}  ${GREEN}Tailscale Setup${NC}                                            ${BLUE}│${NC}"
       echo -e "${BLUE}├─────────────────────────────────────────────────────────────┤${NC}"
-      echo -e "${BLUE}│${NC}  1. Open Tailscale app from Applications                    ${BLUE}│${NC}"
+      echo -e "${BLUE}│${NC}  1. Tailscale app should be opening                         ${BLUE}│${NC}"
       echo -e "${BLUE}│${NC}  2. Click 'Log in' and select 'Sign in with Apple'         ${BLUE}│${NC}"
       echo -e "${BLUE}│${NC}  3. Complete authentication                                 ${BLUE}│${NC}"
       echo -e "${BLUE}└─────────────────────────────────────────────────────────────┘${NC}"
