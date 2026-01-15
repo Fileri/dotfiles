@@ -3,6 +3,7 @@
 
 # Taps
 tap "oven-sh/bun"
+tap "mutagen-io/mutagen"
 
 # =============================================================================
 # CLI Tools
@@ -45,7 +46,7 @@ brew "python"
 # =============================================================================
 
 cask "gcloud-cli"
-brew "mutagen-io/mutagen/mutagen"  # File synchronization
+brew "mutagen"  # File synchronization
 
 # =============================================================================
 # Security & Secrets
