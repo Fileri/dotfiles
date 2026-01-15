@@ -1,0 +1,50 @@
+[user]
+	name = {{ .name }}
+	email = {{ .email }}
+
+[core]
+	editor = nvim
+	autocrlf = input
+
+[init]
+	defaultBranch = main
+
+[pull]
+	rebase = true
+
+[push]
+	default = current
+	autoSetupRemote = true
+
+[fetch]
+	prune = true
+
+[merge]
+	conflictstyle = diff3
+
+[diff]
+	colorMoved = default
+
+[alias]
+	s = status -sb
+	lg = log --oneline --graph --decorate --all
+	co = checkout
+	br = branch
+	ci = commit
+	cm = commit -m
+	amend = commit --amend --no-edit
+	aa = add --all
+	d = diff
+	ds = diff --staged
+	p = push
+	pl = pull
+
+[credential]
+{{- if eq .chezmoi.os "darwin" }}
+	helper = osxkeychain
+{{- else }}
+	helper = cache --timeout=3600
+{{- end }}
+
+[rerere]
+	enabled = true

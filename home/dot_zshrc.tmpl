@@ -1,0 +1,127 @@
+# ZSH Configuration
+
+# Detect OS
+{{- if eq .chezmoi.os "darwin" }}
+export OS_TYPE="macos"
+{{- else }}
+export OS_TYPE="linux"
+{{- end }}
+
+# =============================================================================
+# Path
+# =============================================================================
+
+{{- if eq .chezmoi.os "darwin" }}
+[[ -f "/opt/homebrew/bin/brew" ]] && eval "$(/opt/homebrew/bin/brew shellenv)"
+[[ -f "/usr/local/bin/brew" ]] && eval "$(/usr/local/bin/brew shellenv)"
+{{- else }}
+[[ -f "/home/linuxbrew/.linuxbrew/bin/brew" ]] && eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+{{- end }}
+
+export PATH="$HOME/.local/bin:$HOME/bin:$PATH"
+
+# =============================================================================
+# Environment
+# =============================================================================
+
+export EDITOR="nvim"
+export VISUAL="nvim"
+export LANG="en_US.UTF-8"
+export HISTSIZE=50000
+export SAVEHIST=50000
+export HISTFILE="$HOME/.zsh_history"
+
+# =============================================================================
+# Options
+# =============================================================================
+
+setopt HIST_IGNORE_ALL_DUPS SHARE_HISTORY AUTO_CD CORRECT
+
+# =============================================================================
+# Completion
+# =============================================================================
+
+autoload -Uz compinit && compinit
+zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}'
+zstyle ':completion:*' menu select
+
+# =============================================================================
+# Key Bindings
+# =============================================================================
+
+bindkey -e
+bindkey '^[[A' history-search-backward
+bindkey '^[[B' history-search-forward
+
+# =============================================================================
+# Aliases
+# =============================================================================
+
+alias ..="cd .."
+alias ...="cd ../.."
+alias ls="ls --color=auto"
+alias ll="ls -lah"
+alias la="ls -la"
+alias v="nvim"
+alias vim="nvim"
+
+# Git
+alias g="git"
+alias gs="git status"
+alias ga="git add"
+alias gc="git commit"
+alias gp="git push"
+alias gl="git pull"
+alias gd="git diff"
+alias glog="git log --oneline --graph --decorate"
+
+# tmux
+alias t="tmux"
+alias ta="tmux attach -t"
+alias tn="tmux new -s"
+alias tl="tmux list-sessions"
+
+alias c="clear"
+alias reload="source ~/.zshrc"
+
+{{- if eq .chezmoi.os "darwin" }}
+alias brewup="brew update && brew upgrade && brew cleanup"
+command -v gls &> /dev/null && alias ls="gls --color=auto"
+{{- else }}
+alias open="xdg-open"
+{{- end }}
+
+# =============================================================================
+# Functions
+# =============================================================================
+
+mkcd() { mkdir -p "$1" && cd "$1"; }
+
+# =============================================================================
+# Tools
+# =============================================================================
+
+# FZF
+if command -v fzf &> /dev/null; then
+  command -v fd &> /dev/null && export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'
+  export FZF_DEFAULT_OPTS="--color=bg+:#313244,bg:#1e1e2e,spinner:#f5e0dc,hl:#f38ba8 \
+    --color=fg:#cdd6f4,header:#f38ba8,info:#cba6f7,pointer:#f5e0dc \
+    --color=marker:#f5e0dc,fg+:#cdd6f4,prompt:#cba6f7,hl+:#f38ba8"
+  {{- if eq .chezmoi.os "darwin" }}
+  [[ -f ~/.fzf.zsh ]] && source ~/.fzf.zsh
+  {{- end }}
+fi
+
+# Zoxide
+command -v zoxide &> /dev/null && eval "$(zoxide init zsh)" && alias cd="z"
+
+# Starship
+command -v starship &> /dev/null && eval "$(starship init zsh)"
+
+# Local config
+[[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
+
+{{- if eq .chezmoi.os "linux" }}
+# SSH agent
+[[ -z "$SSH_AUTH_SOCK" ]] && eval "$(ssh-agent -s)" > /dev/null 2>&1
+{{- end }}

@@ -1,0 +1,44 @@
+# Ghostty Configuration
+
+# Theme
+theme = catppuccin-mocha
+
+# Font
+font-family = "JetBrainsMono Nerd Font"
+font-size = 14
+font-thicken = true
+
+# Cursor
+cursor-style = block
+cursor-style-blink = false
+shell-integration-features = cursor
+
+# Window
+window-padding-x = 10
+window-padding-y = 8
+window-decoration = auto
+macos-titlebar-style = hidden
+window-save-state = always
+
+# Behavior
+copy-on-select = clipboard
+confirm-close-surface = false
+mouse-hide-while-typing = true
+
+# Bell
+visual-bell = true
+audible-bell = false
+
+# Scrollback
+scrollback-limit = 50000
+
+# Keybindings for tmux integration
+keybind = cmd+t=text:\x01\x63
+keybind = cmd+w=text:\x01\x78
+keybind = cmd+1=text:\x01\x31
+keybind = cmd+2=text:\x01\x32
+keybind = cmd+3=text:\x01\x33
+keybind = cmd+4=text:\x01\x34
+keybind = cmd+5=text:\x01\x35
+keybind = cmd+d=text:\x01\x7c
+keybind = cmd+shift+d=text:\x01\x2d
