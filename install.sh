@@ -331,7 +331,7 @@ fi
 success "Installation complete!"
 echo ""
 echo -e "${GREEN}✓ Environment variables configured:${NC}"
-echo "  - GOOGLE_API_KEY / GEMINI_API_KEY"
+echo "  - GOOGLE_API_KEY (for Gemini and image generation)"
 echo ""
 echo "Next steps:"
 echo "  1. source ~/.zshrc                        # Reload shell (or restart terminal)"

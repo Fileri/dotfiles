@@ -43,7 +43,6 @@ export HOMEBREW_NO_ENV_HINTS=1
 
 {{ if stat (joinPath .chezmoi.homeDir ".config/op/config") -}}
 {{ $geminiKey := onepasswordRead "op://Development/Gemini API/credential" -}}
-export GEMINI_API_KEY="{{ $geminiKey }}"
 export GOOGLE_API_KEY="{{ $geminiKey }}"
 {{- end }}
 
