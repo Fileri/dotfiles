@@ -138,6 +138,32 @@ if [[ "$OS" == "macos" ]]; then
   echo ""
   read -p "Press any key to continue..." -n 1 -r
   echo
+
+  # Tailscale setup (optional)
+  read -p "Install and setup Tailscale? [y/N] " -n 1 -r
+  echo
+  if [[ $REPLY =~ ^[Yy]$ ]]; then
+    if ! command -v tailscale &> /dev/null; then
+      info "Installing Tailscale..."
+      brew install --cask tailscale
+    fi
+
+    if ! tailscale status &>/dev/null; then
+      echo ""
+      echo -e "${BLUE}┌─────────────────────────────────────────────────────────────┐${NC}"
+      echo -e "${BLUE}│${NC}  ${GREEN}Tailscale Setup${NC}                                            ${BLUE}│${NC}"
+      echo -e "${BLUE}├─────────────────────────────────────────────────────────────┤${NC}"
+      echo -e "${BLUE}│${NC}  1. Open Tailscale app from Applications                    ${BLUE}│${NC}"
+      echo -e "${BLUE}│${NC}  2. Click 'Log in' and select 'Sign in with Apple'         ${BLUE}│${NC}"
+      echo -e "${BLUE}│${NC}  3. Complete authentication                                 ${BLUE}│${NC}"
+      echo -e "${BLUE}└─────────────────────────────────────────────────────────────┘${NC}"
+      echo ""
+      read -p "Press any key after completing Tailscale login..." -n 1 -r
+      echo
+    else
+      success "Tailscale already connected"
+    fi
+  fi
 fi
 
 # =============================================================================

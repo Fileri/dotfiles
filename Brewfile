@@ -69,6 +69,7 @@ cask "claude-code"      # Anthropic Claude Code CLI
 cask "arc"              # Arc browser
 cask "ghostty"
 cask "raycast"
+cask "tailscale"        # VPN mesh network
 
 # =============================================================================
 # Fonts
