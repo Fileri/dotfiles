@@ -3,36 +3,19 @@
 return {
   "nvim-treesitter/nvim-treesitter",
   build = ":TSUpdate",
-  main = "nvim-treesitter.configs",
-  dependencies = { "nvim-treesitter/nvim-treesitter-textobjects" },
-  opts = {
-    ensure_installed = {
-      "bash", "css", "dockerfile", "go", "html", "javascript", "json",
-      "lua", "luadoc", "markdown", "markdown_inline", "python", "rust",
-      "tsx", "typescript", "vim", "vimdoc", "yaml",
-    },
-    auto_install = true,
-    highlight = { enable = true },
-    indent = { enable = true },
-    incremental_selection = {
-      enable = true,
-      keymaps = {
-        init_selection = "<C-space>",
-        node_incremental = "<C-space>",
-        node_decremental = "<bs>",
+  event = { "VeryLazy" },
+  cmd = { "TSUpdate", "TSInstall" },
+  config = function()
+    ---@diagnostic disable-next-line: missing-fields
+    require("nvim-treesitter.configs").setup({
+      ensure_installed = {
+        "bash", "css", "dockerfile", "go", "html", "javascript", "json",
+        "lua", "markdown", "markdown_inline", "python", "rust",
+        "tsx", "typescript", "vim", "vimdoc", "yaml",
       },
-    },
-    textobjects = {
-      select = {
-        enable = true,
-        lookahead = true,
-        keymaps = {
-          ["af"] = "@function.outer",
-          ["if"] = "@function.inner",
-          ["ac"] = "@class.outer",
-          ["ic"] = "@class.inner",
-        },
-      },
-    },
-  },
+      auto_install = true,
+      highlight = { enable = true },
+      indent = { enable = true },
+    })
+  end,
 }
