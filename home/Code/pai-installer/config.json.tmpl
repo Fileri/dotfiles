@@ -1,0 +1,29 @@
+{
+  "userName": "{{ .name }}",
+  "daName": "Basic",
+  "timeZone": "Europe/Oslo",
+  "paiDir": "~/.Basic",
+  "documentsDir": "~/Basic",
+  "projectDirs": [
+    "~/Projects",
+    "~/Code"
+  ],
+  "persona": "personal",
+  "packs": {
+    "upstream": [
+      "pai-hook-system",
+      "pai-core-install",
+      "pai-history-system",
+      "pai-voice-system",
+      "pai-observability-server"
+    ],
+    "custom": []
+  },
+  "elevenLabsApiKey": "",
+  "elevenLabsVoiceId": "",
+{{ if stat (joinPath .chezmoi.homeDir ".config/op/config") -}}
+  "googleApiKey": "{{ onepasswordRead "op://Development/Gemini API/credential" }}"
+{{- else -}}
+  "googleApiKey": ""
+{{- end }}
+}

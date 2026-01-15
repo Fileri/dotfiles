@@ -284,6 +284,42 @@ if ! grep -q "export GOOGLE_API_KEY=" "$HOME/.zshrc"; then
 fi
 
 success "Dotfiles verified - GOOGLE_API_KEY configured"
+
+# =============================================================================
+# PAI (Personal AI Infrastructure) Installation
+# =============================================================================
+
+if [[ "$OS" == "macos" ]]; then
+  read -p "Install PAI (Personal AI Infrastructure)? [y/N] " -n 1 -r
+  echo
+  if [[ $REPLY =~ ^[Yy]$ ]]; then
+    PAI_INSTALLER_DIR="$HOME/Code/pai-installer"
+
+    # Clone pai-installer if it doesn't exist
+    if [[ ! -d "$PAI_INSTALLER_DIR" ]]; then
+      info "Cloning PAI installer..."
+      git clone git@github.com:Fileri/pai-installer.git "$PAI_INSTALLER_DIR"
+    else
+      info "PAI installer already exists, pulling latest..."
+      git -C "$PAI_INSTALLER_DIR" pull
+    fi
+
+    # Check if config.json exists (chezmoi should have created it)
+    if [[ ! -f "$PAI_INSTALLER_DIR/config.json" ]]; then
+      error "PAI config.json not found. Chezmoi should have created it at $PAI_INSTALLER_DIR/config.json"
+    fi
+
+    # Run PAI installer
+    info "Running PAI installer..."
+    if command -v bun &> /dev/null; then
+      (cd "$PAI_INSTALLER_DIR" && bun run install.ts)
+      success "PAI installed successfully"
+    else
+      error "Bun not found. Install bun first: curl -fsSL https://bun.sh/install | bash"
+    fi
+  fi
+fi
+
 success "Installation complete!"
 echo ""
 echo -e "${GREEN}✓ Environment variables configured:${NC}"
