@@ -188,11 +188,11 @@ fi
 
 info "Applying dotfiles with chezmoi..."
 if [[ -d "$DOTFILES_DIR" ]]; then
-  chezmoi init --source="$DOTFILES_DIR" --apply
+  chezmoi init --source="$DOTFILES_DIR" --prompt --apply
 else
   # Fresh machine - clone from GitHub
   read -p "Enter your GitHub username for dotfiles repo: " GITHUB_USER
-  chezmoi init --apply "$GITHUB_USER/dotfiles"
+  chezmoi init --prompt --apply "$GITHUB_USER/dotfiles"
 fi
 
 success "Installation complete!"
