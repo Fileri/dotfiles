@@ -25,10 +25,6 @@ copy-on-select = clipboard
 confirm-close-surface = false
 mouse-hide-while-typing = true
 
-# Bell
-visual-bell = true
-audible-bell = false
-
 # Scrollback
 scrollback-limit = 50000
 
