@@ -278,6 +278,11 @@ command -v zoxide &> /dev/null && eval "$(zoxide init zsh)" && alias cd="z"
 # Bun completions
 [[ -s "$HOME/.bun/_bun" ]] && source "$HOME/.bun/_bun"
 
+# Auto-start tmux session
+if command -v tmux &> /dev/null && [[ -z "$TMUX" ]] && [[ $- == *i* ]]; then
+  tmux new-session -A -s local-ai
+fi
+
 # Starship prompt (load last)
 command -v starship &> /dev/null && eval "$(starship init zsh)"
 
