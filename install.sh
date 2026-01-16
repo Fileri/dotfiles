@@ -282,6 +282,38 @@ fi
 # Apply dotfiles with chezmoi
 # =============================================================================
 
+# Ensure 1Password is authenticated before applying dotfiles
+if command -v op &> /dev/null; then
+  if ! op account list &>/dev/null; then
+    echo ""
+    echo -e "${BLUE}┌─────────────────────────────────────────────────────────────┐${NC}"
+    echo -e "${BLUE}│${NC}  ${GREEN}1Password Authentication Required${NC}                         ${BLUE}│${NC}"
+    echo -e "${BLUE}├─────────────────────────────────────────────────────────────┤${NC}"
+    echo -e "${BLUE}│${NC}  Your dotfiles contain secrets from 1Password.              ${BLUE}│${NC}"
+    echo -e "${BLUE}│${NC}  Please authenticate now:                                   ${BLUE}│${NC}"
+    echo -e "${BLUE}│${NC}                                                             ${BLUE}│${NC}"
+    echo -e "${BLUE}│${NC}  ${GREEN}op signin${NC}                                                  ${BLUE}│${NC}"
+    echo -e "${BLUE}└─────────────────────────────────────────────────────────────┘${NC}"
+    echo ""
+
+    # Wait for user to authenticate
+    while ! op account list &>/dev/null; do
+      echo "Waiting for 1Password authentication..."
+      echo "Run this command in another terminal: ${GREEN}op signin${NC}"
+      echo ""
+      read -p "Press Enter after signing in (or Ctrl+C to cancel)..." -r
+    done
+    success "1Password authenticated successfully"
+  fi
+
+  # Verify we can actually read secrets
+  info "Verifying 1Password connection..."
+  if ! op read "op://Development/Gemini API/credential" &>/dev/null; then
+    error "Cannot read secrets from 1Password. Missing item: Development/Gemini API (credential field)"
+  fi
+  success "1Password secrets accessible"
+fi
+
 # Find chezmoi (in PATH or fallback to common locations)
 if command -v chezmoi &> /dev/null; then
   CHEZMOI="chezmoi"
