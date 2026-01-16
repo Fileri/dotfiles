@@ -203,6 +203,7 @@ if [[ "$OS" == "linux" ]]; then
 
     # chezmoi
     command -v chezmoi &> /dev/null || sh -c "$(curl -fsLS get.chezmoi.io)" -- -b ~/.local/bin
+    export PATH="$HOME/.local/bin:$PATH"
 
     # 1Password CLI
     if ! command -v op &> /dev/null; then
