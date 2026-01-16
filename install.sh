@@ -257,29 +257,37 @@ fi
 
 # Ensure 1Password is authenticated before applying dotfiles
 if command -v op &> /dev/null; then
-  if ! op account list &>/dev/null; then
+  # Check if we can list accounts (means at least one account is configured)
+  if ! op account list &>/dev/null 2>&1; then
+    # No account configured, need to add one
     echo ""
     echo -e "${BLUE}┌─────────────────────────────────────────────────────────────┐${NC}"
-    echo -e "${BLUE}│${NC}  ${GREEN}1Password Authentication Required${NC}                         ${BLUE}│${NC}"
+    echo -e "${BLUE}│${NC}  ${GREEN}1Password Setup Required${NC}                                   ${BLUE}│${NC}"
     echo -e "${BLUE}├─────────────────────────────────────────────────────────────┤${NC}"
-    echo -e "${BLUE}│${NC}  Your dotfiles contain secrets from 1Password.              ${BLUE}│${NC}"
-    echo -e "${BLUE}│${NC}  You will be prompted to sign in.                           ${BLUE}│${NC}"
+    echo -e "${BLUE}│${NC}  Your dotfiles use 1Password for secrets.                   ${BLUE}│${NC}"
+    echo -e "${BLUE}│${NC}                                                             ${BLUE}│${NC}"
+    echo -e "${BLUE}│${NC}  You'll need:                                               ${BLUE}│${NC}"
+    echo -e "${BLUE}│${NC}  - Sign-in address (e.g., my.1password.com)                 ${BLUE}│${NC}"
+    echo -e "${BLUE}│${NC}  - Email address                                            ${BLUE}│${NC}"
+    echo -e "${BLUE}│${NC}  - Secret Key (from Emergency Kit or app)                   ${BLUE}│${NC}"
+    echo -e "${BLUE}│${NC}  - Master Password                                          ${BLUE}│${NC}"
     echo -e "${BLUE}└─────────────────────────────────────────────────────────────┘${NC}"
     echo ""
 
-    info "Signing in to 1Password..."
-    # Sign in and capture session token
-    if eval $(op signin); then
-      success "1Password authenticated successfully"
-    else
-      error "Failed to authenticate with 1Password. Please try again."
-    fi
-  else
-    success "1Password CLI already authenticated"
+    info "Adding 1Password account..."
+    op account add || error "Failed to add 1Password account"
+    success "1Password account configured"
   fi
 
-  # Verify we can actually read secrets
-  info "Verifying 1Password connection..."
+  # Now sign in (if not already signed in)
+  if ! op whoami &>/dev/null; then
+    info "Signing in to 1Password..."
+    eval $(op signin) || error "Failed to sign in to 1Password"
+  fi
+  success "1Password authenticated"
+
+  # Verify we can read required secrets
+  info "Verifying 1Password secrets..."
   if ! op read "op://Development/Gemini API/credential" &>/dev/null; then
     error "Cannot read secrets from 1Password. Missing item: Development/Gemini API (credential field)\nCreate this item in 1Password before continuing."
   fi
