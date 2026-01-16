@@ -23,6 +23,7 @@ brew "zoxide"       # cd replacement
 brew "eza"          # ls replacement
 brew "bat"          # cat replacement
 brew "lazygit"      # git TUI
+brew "gh"           # GitHub CLI
 
 # ZSH plugins
 brew "zsh-autosuggestions"

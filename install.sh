@@ -82,6 +82,20 @@ if [[ "$OS" == "macos" ]]; then
     "$DOTFILES_DIR/macos/defaults.sh"
   fi
 
+  # GitHub CLI authentication
+  if command -v gh &> /dev/null; then
+    if ! gh auth status &>/dev/null; then
+      echo ""
+      echo -e "${BLUE}┌─────────────────────────────────────────────────────────────┐${NC}"
+      echo -e "${BLUE}│${NC}  ${GREEN}GitHub CLI Setup${NC}                                           ${BLUE}│${NC}"
+      echo -e "${BLUE}└─────────────────────────────────────────────────────────────┘${NC}"
+      info "Authenticating GitHub CLI (opens browser)..."
+      gh auth login --git-protocol ssh --web
+    else
+      success "GitHub CLI already authenticated"
+    fi
+  fi
+
   # Raycast setup reminder
   echo ""
   echo -e "${BLUE}┌─────────────────────────────────────────────────────────────┐${NC}"
