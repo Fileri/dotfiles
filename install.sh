@@ -190,6 +190,9 @@ fi
 # =============================================================================
 
 if [[ "$OS" == "linux" ]]; then
+  # Ensure ~/.local/bin is in PATH for installed tools
+  export PATH="$HOME/.local/bin:$PATH"
+
   if command -v apt &> /dev/null; then
     info "Installing packages (apt)..."
     sudo apt update
@@ -203,7 +206,6 @@ if [[ "$OS" == "linux" ]]; then
 
     # chezmoi
     command -v chezmoi &> /dev/null || sh -c "$(curl -fsLS get.chezmoi.io)" -- -b ~/.local/bin
-    export PATH="$HOME/.local/bin:$PATH"
 
     # 1Password CLI
     if ! command -v op &> /dev/null; then
