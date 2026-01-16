@@ -12,7 +12,15 @@ Host github.com
     Port 443
     User git
 
-# Add host-specific configs below
+{{- if eq .chezmoi.os "darwin" }}
+# GCP ai-console via IAP tunnel
+Host ai-console
+    HostName ai-console.europe-west1-b.ai-automat-id-play-38355
+    ProxyCommand gcloud compute start-iap-tunnel ai-console %p --listen-on-stdin --zone=europe-west1-b --project=ai-automat-id-play-38355
+    User erik
+{{- end }}
+
+# Add other host-specific configs below
 # Host myserver
 #     HostName server.example.com
 #     User erik
