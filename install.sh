@@ -242,7 +242,7 @@ if [[ "$SHELL" != *"zsh"* ]] && command -v zsh &> /dev/null; then
   info "Setting zsh as default shell..."
   ZSH_PATH=$(which zsh)
   grep -q "$ZSH_PATH" /etc/shells || echo "$ZSH_PATH" | sudo tee -a /etc/shells
-  chsh -s "$ZSH_PATH"
+  sudo chsh -s "$ZSH_PATH" "$USER"
 fi
 
 # =============================================================================
