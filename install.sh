@@ -218,6 +218,36 @@ if [[ "$OS" == "linux" ]]; then
     fi
   fi
 
+  # 1Password CLI setup (Linux)
+  if command -v op &> /dev/null; then
+    if ! op account list &>/dev/null; then
+      echo ""
+      echo -e "${BLUE}┌─────────────────────────────────────────────────────────────┐${NC}"
+      echo -e "${BLUE}│${NC}  ${GREEN}1Password CLI Setup${NC}                                       ${BLUE}│${NC}"
+      echo -e "${BLUE}├─────────────────────────────────────────────────────────────┤${NC}"
+      echo -e "${BLUE}│${NC}  Run the following command to sign in:                      ${BLUE}│${NC}"
+      echo -e "${BLUE}│${NC}  ${GREEN}op signin${NC}                                                  ${BLUE}│${NC}"
+      echo -e "${BLUE}└─────────────────────────────────────────────────────────────┘${NC}"
+      echo ""
+      read -p "Press any key after signing in to 1Password..." -n 1 -r
+      echo
+
+      # Verify connection
+      if ! op account list &>/dev/null; then
+        error "1Password CLI not authenticated. Please run 'op signin' and try again."
+      fi
+    else
+      success "1Password CLI connected"
+    fi
+
+    # Verify required 1Password items exist
+    info "Verifying 1Password secrets..."
+    if ! op read "op://Development/Gemini API/credential" &>/dev/null; then
+      error "Missing 1Password item: Development/Gemini API (credential field)\nCreate this item in 1Password before continuing."
+    fi
+    success "1Password secrets verified"
+  fi
+
   # Nerd Font
   info "Installing Nerd Font..."
   mkdir -p ~/.local/share/fonts
