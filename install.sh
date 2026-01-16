@@ -193,7 +193,7 @@ if [[ "$OS" == "linux" ]]; then
   if command -v apt &> /dev/null; then
     info "Installing packages (apt)..."
     sudo apt update
-    sudo apt install -y neovim tmux git curl ripgrep fd-find fzf zsh
+    sudo apt install -y neovim tmux git curl ripgrep fd-find fzf zsh fontconfig
 
     # Starship
     command -v starship &> /dev/null || curl -sS https://starship.rs/install.sh | sh -s -- -y
