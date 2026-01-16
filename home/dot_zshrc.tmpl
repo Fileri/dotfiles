@@ -93,6 +93,11 @@ bindkey -e
 bindkey '^[[A' history-search-backward
 bindkey '^[[B' history-search-forward
 
+# Fix backspace and delete
+bindkey '^?' backward-delete-char
+bindkey '^[[3~' delete-char
+bindkey '^H' backward-delete-char
+
 # =============================================================================
 # Aliases
 # =============================================================================
