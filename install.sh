@@ -216,10 +216,15 @@ if [[ "$OS" == "linux" ]]; then
         sudo tee /etc/apt/sources.list.d/1password.list
       sudo apt update && sudo apt install -y 1password-cli
     fi
-  fi
 
-  # 1Password CLI setup (Linux) - handled in common section below
-  # This section intentionally left empty
+    # Bun
+    if ! command -v bun &> /dev/null; then
+      info "Installing Bun..."
+      curl -fsSL https://bun.sh/install | bash
+      export BUN_INSTALL="$HOME/.bun"
+      export PATH="$BUN_INSTALL/bin:$PATH"
+    fi
+  fi
 
   # Nerd Font
   info "Installing Nerd Font..."
@@ -359,43 +364,42 @@ success "Dotfiles verified - GOOGLE_API_KEY configured"
 # PAI (Personal AI Infrastructure) Installation
 # =============================================================================
 
-if [[ "$OS" == "macos" ]]; then
-  read -p "Install PAI (Personal AI Infrastructure)? [y/N] " -n 1 -r
-  echo
-  if [[ $REPLY =~ ^[Yy]$ ]]; then
-    PAI_INSTALLER_DIR="$HOME/Code/pai-installer"
-
-    # Clone pai-installer if it doesn't exist
-    if [[ ! -d "$PAI_INSTALLER_DIR" ]]; then
-      info "Cloning PAI installer..."
-      git clone git@github.com:Fileri/pai-installer.git "$PAI_INSTALLER_DIR"
-    elif [[ -d "$PAI_INSTALLER_DIR/.git" ]]; then
-      info "PAI installer already exists, pulling latest..."
-      git -C "$PAI_INSTALLER_DIR" pull
-    else
-      info "PAI installer directory exists but is not a git repo, removing and cloning..."
-      rm -rf "$PAI_INSTALLER_DIR"
-      git clone git@github.com:Fileri/pai-installer.git "$PAI_INSTALLER_DIR"
-    fi
-
-    # Apply chezmoi to create config.json
-    info "Generating PAI config.json..."
-    "$CHEZMOI" apply --force --source="$DOTFILES_DIR"
-
-    # Check if config.json exists
-    if [[ ! -f "$PAI_INSTALLER_DIR/config.json" ]]; then
-      error "PAI config.json not found at $PAI_INSTALLER_DIR/config.json"
-    fi
-
-    # Run PAI installer
-    info "Running PAI installer..."
-    if command -v bun &> /dev/null; then
-      (cd "$PAI_INSTALLER_DIR" && bun run install.ts)
-      success "PAI installed successfully"
-    else
-      error "Bun not found. Install bun first: curl -fsSL https://bun.sh/install | bash"
-    fi
+read -p "Install PAI (Personal AI Infrastructure)? [y/N] " -n 1 -r
+echo
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+  # Ensure bun is available
+  if ! command -v bun &> /dev/null; then
+    error "Bun not found. Install bun first: curl -fsSL https://bun.sh/install | bash"
   fi
+
+  PAI_INSTALLER_DIR="$HOME/Code/pai-installer"
+
+  # Clone pai-installer if it doesn't exist
+  if [[ ! -d "$PAI_INSTALLER_DIR" ]]; then
+    info "Cloning PAI installer..."
+    git clone git@github.com:Fileri/pai-installer.git "$PAI_INSTALLER_DIR"
+  elif [[ -d "$PAI_INSTALLER_DIR/.git" ]]; then
+    info "PAI installer already exists, pulling latest..."
+    git -C "$PAI_INSTALLER_DIR" pull
+  else
+    info "PAI installer directory exists but is not a git repo, removing and cloning..."
+    rm -rf "$PAI_INSTALLER_DIR"
+    git clone git@github.com:Fileri/pai-installer.git "$PAI_INSTALLER_DIR"
+  fi
+
+  # Apply chezmoi to create config.json
+  info "Generating PAI config.json..."
+  "$CHEZMOI" apply --force --source="$DOTFILES_DIR"
+
+  # Check if config.json exists
+  if [[ ! -f "$PAI_INSTALLER_DIR/config.json" ]]; then
+    error "PAI config.json not found at $PAI_INSTALLER_DIR/config.json"
+  fi
+
+  # Run PAI installer
+  info "Running PAI installer..."
+  (cd "$PAI_INSTALLER_DIR" && bun run install.ts)
+  success "PAI installed successfully"
 fi
 
 success "Installation complete!"
