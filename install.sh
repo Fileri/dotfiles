@@ -252,6 +252,17 @@ fi
 # Apply dotfiles with chezmoi
 # =============================================================================
 
+# Find chezmoi (in PATH or fallback to common locations)
+if command -v chezmoi &> /dev/null; then
+  CHEZMOI="chezmoi"
+elif [[ -x "$HOME/.local/bin/chezmoi" ]]; then
+  CHEZMOI="$HOME/.local/bin/chezmoi"
+elif [[ -x "/opt/homebrew/bin/chezmoi" ]]; then
+  CHEZMOI="/opt/homebrew/bin/chezmoi"
+else
+  error "chezmoi not found. Installation may have failed."
+fi
+
 info "Applying dotfiles with chezmoi..."
 
 # Check if chezmoi config already has name/email
@@ -278,15 +289,15 @@ if [[ -d "$DOTFILES_DIR" ]]; then
   # Local dotfiles directory exists
   if [[ -d "$HOME/.local/share/chezmoi" ]]; then
     info "Chezmoi already initialized, re-initializing from source..."
-    chezmoi init --apply --force --source="$DOTFILES_DIR"
+    "$CHEZMOI" init --apply --force --source="$DOTFILES_DIR"
   else
     info "Initializing chezmoi from local dotfiles..."
-    chezmoi init --apply --force --source="$DOTFILES_DIR"
+    "$CHEZMOI" init --apply --force --source="$DOTFILES_DIR"
   fi
 else
   # Fresh machine - clone from GitHub
   read -p "Enter your GitHub username for dotfiles repo: " GITHUB_USER
-  chezmoi init --apply --force "$GITHUB_USER/dotfiles"
+  "$CHEZMOI" init --apply --force "$GITHUB_USER/dotfiles"
 fi
 
 # Verify dotfiles were applied successfully
@@ -327,7 +338,7 @@ if [[ "$OS" == "macos" ]]; then
 
     # Apply chezmoi to create config.json
     info "Generating PAI config.json..."
-    chezmoi apply --force --source="$DOTFILES_DIR"
+    "$CHEZMOI" apply --force --source="$DOTFILES_DIR"
 
     # Check if config.json exists
     if [[ ! -f "$PAI_INSTALLER_DIR/config.json" ]]; then
