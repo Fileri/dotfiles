@@ -1,0 +1,42 @@
+#!/bin/bash
+# Start mutagen sync to ai-console via persistent SSH tunnel
+
+# Kill existing tunnel if any
+pkill -f "ssh.*-L 2222:localhost:22.*ai-console" 2>/dev/null
+
+# Create persistent SSH tunnel in background
+ssh -fNT -o ServerAliveInterval=60 -o ServerAliveCountMax=3 -L 2222:localhost:22 ai-console
+
+# Wait for tunnel to establish
+sleep 3
+
+# Add SSH config for localhost tunnel
+if ! grep -q "Host ai-console-tunnel" ~/.ssh/config; then
+  cat >> ~/.ssh/config << 'EOF'
+
+# ai-console via localhost tunnel (for mutagen)
+Host ai-console-tunnel
+    HostName localhost
+    Port 2222
+    User erik
+    IdentityFile ~/.ssh/google_compute_engine
+    StrictHostKeyChecking no
+    UserKnownHostsFile /dev/null
+EOF
+fi
+
+# Create mutagen sync sessions
+echo "Creating sync sessions..."
+mutagen sync create ~/Basic ai-console-tunnel:~/Basic \
+  --name pai-sync-Basic \
+  --ignore=".DS_Store,.git,node_modules,__pycache__,*.pyc" \
+  --sync-mode=two-way-resolved \
+  2>/dev/null || echo "Basic sync session already exists or failed"
+
+mutagen sync create ~/Projects ai-console-tunnel:~/Projects \
+  --name pai-sync-Projects \
+  --ignore=".DS_Store,.git,node_modules,__pycache__,*.pyc" \
+  --sync-mode=two-way-resolved \
+  2>/dev/null || echo "Projects sync session already exists or failed"
+
+echo "Sync sessions created. Check status with: mutagen sync list"

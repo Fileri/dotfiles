@@ -1,0 +1,11 @@
+#!/bin/bash
+# Stop mutagen sync and SSH tunnel to ai-console
+
+echo "Stopping mutagen sync sessions..."
+mutagen sync terminate pai-sync-Basic 2>/dev/null && echo "✓ Stopped Basic sync" || echo "No Basic sync running"
+mutagen sync terminate pai-sync-Projects 2>/dev/null && echo "✓ Stopped Projects sync" || echo "No Projects sync running"
+
+echo "Closing SSH tunnel..."
+pkill -f "ssh.*-L 2222:localhost:22.*ai-console" && echo "✓ SSH tunnel closed" || echo "No tunnel running"
+
+echo "Sync stopped"
