@@ -196,7 +196,7 @@ if [[ "$OS" == "linux" ]]; then
   if command -v apt &> /dev/null; then
     info "Installing packages (apt)..."
     sudo apt update
-    sudo apt install -y neovim tmux git curl ripgrep fd-find fzf zsh fontconfig
+    sudo apt install -y neovim tmux git curl ripgrep fd-find fzf zsh fontconfig kubectl taskwarrior
 
     # Starship
     command -v starship &> /dev/null || curl -sS https://starship.rs/install.sh | sh -s -- -y
@@ -206,6 +206,12 @@ if [[ "$OS" == "linux" ]]; then
 
     # chezmoi
     command -v chezmoi &> /dev/null || sh -c "$(curl -fsLS get.chezmoi.io)" -- -b ~/.local/bin
+
+    # Flux CLI
+    if ! command -v flux &> /dev/null; then
+      info "Installing Flux CLI..."
+      curl -s https://fluxcd.io/install.sh | bash
+    fi
 
     # 1Password CLI
     if ! command -v op &> /dev/null; then

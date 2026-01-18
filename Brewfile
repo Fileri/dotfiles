@@ -4,6 +4,8 @@
 # Taps
 tap "oven-sh/bun"
 tap "mutagen-io/mutagen"
+tap "siderolabs/tap"
+tap "fluxcd/tap"
 
 # =============================================================================
 # CLI Tools
@@ -33,6 +35,9 @@ brew "zsh-syntax-highlighting"
 brew "glow"         # Terminal markdown renderer
 brew "grip"         # GitHub-style markdown preview
 
+# Task management
+brew "task"         # Taskwarrior CLI
+
 # =============================================================================
 # Development
 # =============================================================================
@@ -47,6 +52,9 @@ brew "python"
 # =============================================================================
 
 cask "gcloud-cli"
+brew "kubernetes-cli"  # kubectl
+brew "siderolabs/tap/talosctl"  # Talos Linux management
+brew "fluxcd/tap/flux"  # Flux GitOps CLI
 brew "mutagen"  # File synchronization
 
 # =============================================================================

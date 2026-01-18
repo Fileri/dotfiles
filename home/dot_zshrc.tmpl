@@ -206,12 +206,9 @@ inwx() {
   fi
 }
 
-# SSH to ai-console via IAP tunnel
+# SSH to ai-console via Tailscale
 ai-console() {
-  gcloud compute ssh ai-console \
-    --tunnel-through-iap \
-    --zone=europe-west1-b \
-    --project=ai-automat-id-play-38355
+  ssh ai-console
 }
 
 # Mutagen sync management for ai-console

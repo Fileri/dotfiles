@@ -13,15 +13,11 @@ Host github.com
     User git
 
 {{- if eq .chezmoi.os "darwin" }}
-# GCP ai-console via IAP tunnel
+# ai-console via Tailscale
 Host ai-console
-    HostName ai-console.europe-west1-b.ai-automat-id-play-38355
-    ProxyCommand gcloud compute start-iap-tunnel ai-console %p --listen-on-stdin --zone=europe-west1-b --project=ai-automat-id-play-38355
-    IdentityFile ~/.ssh/google_compute_engine
+    HostName ai-console
     User erik
-    UserKnownHostsFile ~/.ssh/google_compute_known_hosts
-    HostKeyAlias compute.2528133485698065070
-    CheckHostIP no
+    IdentityFile ~/.ssh/google_compute_engine
 {{- end }}
 
 # Add other host-specific configs below

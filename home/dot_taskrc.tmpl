@@ -1,0 +1,12 @@
+# Taskwarrior configuration
+# Managed by chezmoi - do not edit directly
+
+# Sync configuration (taskwarrior-sync-server on PAI)
+{{ if stat (joinPath .chezmoi.homeDir ".config/op/config") -}}
+{{ $serverUrl := onepasswordRead "op://Development/taskwarrior-sync/Section_si4yhmlsgrftrtvblbxtlrx4xa/server_url" -}}
+{{ $clientId := onepasswordRead "op://Development/taskwarrior-sync/Section_si4yhmlsgrftrtvblbxtlrx4xa/client_id" -}}
+{{ $syncSecret := onepasswordRead "op://Development/taskwarrior-sync/Section_si4yhmlsgrftrtvblbxtlrx4xa/encryption_secret" -}}
+sync.server.url={{ $serverUrl }}
+sync.server.client_id={{ $clientId }}
+sync.encryption_secret={{ $syncSecret }}
+{{ end }}
