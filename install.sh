@@ -196,7 +196,13 @@ if [[ "$OS" == "linux" ]]; then
   if command -v apt &> /dev/null; then
     info "Installing packages (apt)..."
     sudo apt update
-    sudo apt install -y neovim tmux git curl ripgrep fd-find fzf zsh fontconfig kubectl taskwarrior
+    sudo apt install -y neovim tmux git curl ripgrep fd-find fzf zsh fontconfig taskwarrior
+
+    # kubectl (not in default apt repos)
+    if ! command -v kubectl &> /dev/null; then
+      info "Installing kubectl via snap..."
+      sudo snap install kubectl --classic
+    fi
 
     # Starship
     command -v starship &> /dev/null || curl -sS https://starship.rs/install.sh | sh -s -- -y
