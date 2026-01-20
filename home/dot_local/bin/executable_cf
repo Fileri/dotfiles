@@ -1,0 +1,325 @@
+#!/usr/bin/env bash
+#
+# cf - Cloudflare DNS API CLI
+#
+# Usage:
+#   cf zones                               List all zones
+#   cf list <zone>                         List DNS records for zone
+#   cf add <zone> <type> <name> <content> [ttl] [proxied]  Add DNS record
+#   cf delete <zone> <record_id>           Delete DNS record
+#   cf update <zone> <record_id> <content> Update DNS record
+#   cf purge <zone>                        Purge entire cache
+#
+# Authentication:
+#   API token read from 1Password:
+#   - op://Development/Cloudflare/api_token
+#
+# Examples:
+#   cf zones
+#   cf list example.com
+#   cf add example.com A www 192.168.1.1
+#   cf add example.com CNAME blog example.com false
+#   cf delete example.com abc123
+
+set -euo pipefail
+
+CF_API="https://api.cloudflare.com/client/v4"
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+error() { echo -e "${RED}Error:${NC} $1" >&2; exit 1; }
+success() { echo -e "${GREEN}$1${NC}"; }
+info() { echo -e "${BLUE}$1${NC}"; }
+
+# Get API token from 1Password
+get_token() {
+    if ! command -v op &> /dev/null; then
+        error "1Password CLI (op) not found. Install with: brew install 1password-cli"
+    fi
+
+    CF_TOKEN=$(op read "op://Development/Cloudflare/api_token" 2>/dev/null) || \
+        error "Could not read Cloudflare API token from 1Password"
+}
+
+# Make API call
+cf_api() {
+    local method="$1"
+    local endpoint="$2"
+    local data="${3:-}"
+
+    local args=(-s -X "$method" "$CF_API$endpoint" \
+        -H "Authorization: Bearer $CF_TOKEN" \
+        -H "Content-Type: application/json")
+
+    if [[ -n "$data" ]]; then
+        args+=(-d "$data")
+    fi
+
+    curl "${args[@]}"
+}
+
+# Get zone ID from zone name
+get_zone_id() {
+    local zone_name="$1"
+    local response
+    response=$(cf_api GET "/zones?name=$zone_name")
+
+    local zone_id
+    zone_id=$(echo "$response" | jq -r '.result[0].id // empty')
+
+    if [[ -z "$zone_id" ]]; then
+        error "Zone '$zone_name' not found"
+    fi
+
+    echo "$zone_id"
+}
+
+# List all zones
+cmd_zones() {
+    get_token
+
+    local response
+    response=$(cf_api GET "/zones?per_page=50")
+
+    if ! echo "$response" | jq -e '.success' > /dev/null 2>&1; then
+        error "API call failed: $(echo "$response" | jq -r '.errors[0].message // "Unknown error"')"
+    fi
+
+    echo "Cloudflare Zones:"
+    echo "----------------------------------------"
+    printf "%-36s  %-30s  %s\n" "ZONE ID" "NAME" "STATUS"
+    echo "----------------------------------------"
+
+    echo "$response" | jq -r '.result[] | "\(.id)  \(.name)  \(.status)"' | \
+        while read -r line; do
+            printf "%-36s  %-30s  %s\n" $line
+        done
+}
+
+# List DNS records
+cmd_list() {
+    local zone="${1:-}"
+    [[ -z "$zone" ]] && error "Usage: cf list <zone>"
+
+    get_token
+    local zone_id
+    zone_id=$(get_zone_id "$zone")
+
+    local response
+    response=$(cf_api GET "/zones/$zone_id/dns_records?per_page=100")
+
+    if ! echo "$response" | jq -e '.success' > /dev/null 2>&1; then
+        error "API call failed: $(echo "$response" | jq -r '.errors[0].message // "Unknown error"')"
+    fi
+
+    echo "DNS Records for $zone:"
+    echo "--------------------------------------------------------------------------------"
+    printf "%-24s %-6s %-30s %-7s %s\n" "ID" "TYPE" "NAME" "PROXIED" "CONTENT"
+    echo "--------------------------------------------------------------------------------"
+
+    echo "$response" | jq -r '.result[] | "\(.id) \(.type) \(.name) \(.proxied) \(.content)"' | \
+        while read -r id type name proxied content; do
+            # Truncate content for display
+            content="${content:0:40}"
+            proxied_str="no"
+            [[ "$proxied" == "true" ]] && proxied_str="yes"
+            printf "%-24s %-6s %-30s %-7s %s\n" "$id" "$type" "$name" "$proxied_str" "$content"
+        done
+}
+
+# Add DNS record
+cmd_add() {
+    local zone="${1:-}"
+    local type="${2:-}"
+    local name="${3:-}"
+    local content="${4:-}"
+    local ttl="${5:-1}"  # 1 = automatic
+    local proxied="${6:-false}"
+
+    [[ -z "$zone" || -z "$type" || -z "$name" || -z "$content" ]] && \
+        error "Usage: cf add <zone> <type> <name> <content> [ttl] [proxied]"
+
+    get_token
+    local zone_id
+    zone_id=$(get_zone_id "$zone")
+
+    # Build JSON payload
+    local data
+    data=$(jq -n \
+        --arg type "$type" \
+        --arg name "$name" \
+        --arg content "$content" \
+        --argjson ttl "$ttl" \
+        --argjson proxied "$proxied" \
+        '{type: $type, name: $name, content: $content, ttl: $ttl, proxied: $proxied}')
+
+    # Handle MX/SRV priority
+    if [[ "$type" == "MX" || "$type" == "SRV" ]]; then
+        local priority="${5:-10}"
+        ttl="${6:-1}"
+        proxied="false"
+        data=$(jq -n \
+            --arg type "$type" \
+            --arg name "$name" \
+            --arg content "$content" \
+            --argjson priority "$priority" \
+            --argjson ttl "$ttl" \
+            '{type: $type, name: $name, content: $content, priority: $priority, ttl: $ttl, proxied: false}')
+    fi
+
+    local response
+    response=$(cf_api POST "/zones/$zone_id/dns_records" "$data")
+
+    if echo "$response" | jq -e '.success' > /dev/null 2>&1; then
+        local record_id
+        record_id=$(echo "$response" | jq -r '.result.id')
+        success "Record created: $type $name -> $content (ID: $record_id)"
+    else
+        local error_msg
+        error_msg=$(echo "$response" | jq -r '.errors[0].message // "Unknown error"')
+        error "Failed to create record: $error_msg"
+    fi
+}
+
+# Delete DNS record
+cmd_delete() {
+    local zone="${1:-}"
+    local record_id="${2:-}"
+
+    [[ -z "$zone" || -z "$record_id" ]] && error "Usage: cf delete <zone> <record_id>"
+
+    get_token
+    local zone_id
+    zone_id=$(get_zone_id "$zone")
+
+    local response
+    response=$(cf_api DELETE "/zones/$zone_id/dns_records/$record_id")
+
+    if echo "$response" | jq -e '.success' > /dev/null 2>&1; then
+        success "Record $record_id deleted"
+    else
+        local error_msg
+        error_msg=$(echo "$response" | jq -r '.errors[0].message // "Unknown error"')
+        error "Failed to delete record: $error_msg"
+    fi
+}
+
+# Update DNS record
+cmd_update() {
+    local zone="${1:-}"
+    local record_id="${2:-}"
+    local content="${3:-}"
+
+    [[ -z "$zone" || -z "$record_id" || -z "$content" ]] && \
+        error "Usage: cf update <zone> <record_id> <content>"
+
+    get_token
+    local zone_id
+    zone_id=$(get_zone_id "$zone")
+
+    # Get existing record to preserve type/name
+    local existing
+    existing=$(cf_api GET "/zones/$zone_id/dns_records/$record_id")
+
+    local type name proxied ttl
+    type=$(echo "$existing" | jq -r '.result.type')
+    name=$(echo "$existing" | jq -r '.result.name')
+    proxied=$(echo "$existing" | jq -r '.result.proxied')
+    ttl=$(echo "$existing" | jq -r '.result.ttl')
+
+    local data
+    data=$(jq -n \
+        --arg type "$type" \
+        --arg name "$name" \
+        --arg content "$content" \
+        --argjson ttl "$ttl" \
+        --argjson proxied "$proxied" \
+        '{type: $type, name: $name, content: $content, ttl: $ttl, proxied: $proxied}')
+
+    local response
+    response=$(cf_api PUT "/zones/$zone_id/dns_records/$record_id" "$data")
+
+    if echo "$response" | jq -e '.success' > /dev/null 2>&1; then
+        success "Record $record_id updated: $content"
+    else
+        local error_msg
+        error_msg=$(echo "$response" | jq -r '.errors[0].message // "Unknown error"')
+        error "Failed to update record: $error_msg"
+    fi
+}
+
+# Purge cache
+cmd_purge() {
+    local zone="${1:-}"
+    [[ -z "$zone" ]] && error "Usage: cf purge <zone>"
+
+    get_token
+    local zone_id
+    zone_id=$(get_zone_id "$zone")
+
+    local response
+    response=$(cf_api POST "/zones/$zone_id/purge_cache" '{"purge_everything":true}')
+
+    if echo "$response" | jq -e '.success' > /dev/null 2>&1; then
+        success "Cache purged for $zone"
+    else
+        local error_msg
+        error_msg=$(echo "$response" | jq -r '.errors[0].message // "Unknown error"')
+        error "Failed to purge cache: $error_msg"
+    fi
+}
+
+# Show help
+show_help() {
+    cat <<EOF
+cf - Cloudflare DNS API CLI
+
+Usage:
+  cf zones                                        List all zones
+  cf list <zone>                                  List DNS records
+  cf add <zone> <type> <name> <content> [ttl] [proxied]  Add record
+  cf delete <zone> <record_id>                    Delete record
+  cf update <zone> <record_id> <content>          Update record
+  cf purge <zone>                                 Purge entire cache
+
+Examples:
+  cf zones
+  cf list example.com
+  cf add example.com A www 192.168.1.1
+  cf add example.com A www 192.168.1.1 1 true     # proxied
+  cf add example.com CNAME blog example.com
+  cf add example.com TXT @ "v=spf1 include:_spf.google.com ~all"
+  cf add example.com MX @ mail.example.com 10     # MX with priority
+  cf delete example.com abc123def456
+  cf update example.com abc123def456 "new-ip"
+  cf purge example.com
+
+Notes:
+  - TTL: 1 = automatic (default), or specify seconds (e.g., 3600)
+  - Proxied: true/false (default: false) - orange cloud on/off
+
+Authentication:
+  API token read from 1Password:
+  - op://Development/Cloudflare/api_token
+
+  Create token at: https://dash.cloudflare.com/profile/api-tokens
+  Required permissions: Zone:DNS:Edit, Zone:Zone:Read
+EOF
+}
+
+# Main
+case "${1:-}" in
+    zones)  shift; cmd_zones "$@" ;;
+    list)   shift; cmd_list "$@" ;;
+    add)    shift; cmd_add "$@" ;;
+    delete) shift; cmd_delete "$@" ;;
+    update) shift; cmd_update "$@" ;;
+    purge)  shift; cmd_purge "$@" ;;
+    -h|--help|help|"") show_help ;;
+    *)      error "Unknown command: $1. Use 'cf --help' for usage." ;;
+esac
