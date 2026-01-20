@@ -1,0 +1,250 @@
+#!/usr/bin/env bash
+#
+# inwx - INWX DNS API CLI
+#
+# Usage:
+#   inwx list <domain>                     List DNS records for domain
+#   inwx add <domain> <type> <name> <content> [ttl]  Add DNS record
+#   inwx delete <domain> <id>              Delete DNS record by ID
+#   inwx update <domain> <id> <content>    Update DNS record content
+#
+# Authentication:
+#   Credentials are read from 1Password:
+#   - op://Development/INWX/username
+#   - op://Development/INWX/password
+#
+# Examples:
+#   inwx list fillipsveen.no
+#   inwx add fillipsveen.no TXT _dmarc "v=DMARC1; p=none"
+#   inwx add fillipsveen.no MX mail 10
+#   inwx delete fillipsveen.no 12345
+
+set -euo pipefail
+
+INWX_API="https://api.domrobot.com/xmlrpc/"
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+error() { echo -e "${RED}Error:${NC} $1" >&2; exit 1; }
+success() { echo -e "${GREEN}$1${NC}"; }
+warn() { echo -e "${YELLOW}$1${NC}"; }
+
+# Get credentials from 1Password
+get_credentials() {
+    if ! command -v op &> /dev/null; then
+        error "1Password CLI (op) not found. Install with: brew install 1password-cli"
+    fi
+
+    INWX_USER=$(op read "op://Development/INWX/username" 2>/dev/null) || error "Could not read INWX username from 1Password"
+    INWX_PASS=$(op read "op://Development/INWX/password" 2>/dev/null) || error "Could not read INWX password from 1Password"
+}
+
+# Make XML-RPC call
+xmlrpc_call() {
+    local method="$1"
+    local params="$2"
+
+    curl -s -X POST "$INWX_API" \
+        -H "Content-Type: text/xml" \
+        -d "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<methodCall>
+    <methodName>$method</methodName>
+    <params>$params</params>
+</methodCall>"
+}
+
+# Login and get session
+login() {
+    get_credentials
+
+    local response
+    response=$(xmlrpc_call "account.login" "
+        <param><value><struct>
+            <member><name>user</name><value><string>$INWX_USER</string></value></member>
+            <member><name>pass</name><value><string>$INWX_PASS</string></value></member>
+        </struct></value></param>")
+
+    # Check for error
+    if echo "$response" | grep -q "<name>code</name><value><int>1000</int>"; then
+        return 0
+    else
+        local error_msg
+        error_msg=$(echo "$response" | grep -oP '(?<=<name>msg</name><value><string>).*?(?=</string>)' | head -1)
+        error "Login failed: $error_msg"
+    fi
+}
+
+# List DNS records
+cmd_list() {
+    local domain="${1:-}"
+    [[ -z "$domain" ]] && error "Usage: inwx list <domain>"
+
+    login
+
+    local response
+    response=$(xmlrpc_call "nameserver.info" "
+        <param><value><struct>
+            <member><name>domain</name><value><string>$domain</string></value></member>
+        </struct></value></param>")
+
+    # Parse and display records
+    echo "DNS Records for $domain:"
+    echo "----------------------------------------"
+    printf "%-8s %-6s %-30s %s\n" "ID" "TYPE" "NAME" "CONTENT"
+    echo "----------------------------------------"
+
+    # Extract records using grep/sed (simple parsing)
+    echo "$response" | grep -oP '(?<=<struct>).*?(?=</struct>)' | while read -r record; do
+        local id type name content
+        id=$(echo "$record" | grep -oP '(?<=<name>id</name><value><int>).*?(?=</int>)' || echo "")
+        type=$(echo "$record" | grep -oP '(?<=<name>type</name><value><string>).*?(?=</string>)' || echo "")
+        name=$(echo "$record" | grep -oP '(?<=<name>name</name><value><string>).*?(?=</string>)' || echo "")
+        content=$(echo "$record" | grep -oP '(?<=<name>content</name><value><string>).*?(?=</string>)' | head -1 || echo "")
+
+        if [[ -n "$id" && -n "$type" ]]; then
+            printf "%-8s %-6s %-30s %s\n" "$id" "$type" "$name" "${content:0:50}"
+        fi
+    done
+}
+
+# Add DNS record
+cmd_add() {
+    local domain="${1:-}"
+    local type="${2:-}"
+    local name="${3:-}"
+    local content="${4:-}"
+    local ttl="${5:-3600}"
+
+    [[ -z "$domain" || -z "$type" || -z "$name" || -z "$content" ]] && \
+        error "Usage: inwx add <domain> <type> <name> <content> [ttl]"
+
+    login
+
+    local params="
+        <param><value><struct>
+            <member><name>domain</name><value><string>$domain</string></value></member>
+            <member><name>type</name><value><string>$type</string></value></member>
+            <member><name>name</name><value><string>$name</string></value></member>
+            <member><name>content</name><value><string>$content</string></value></member>
+            <member><name>ttl</name><value><int>$ttl</int></value></member>
+        </struct></value></param>"
+
+    # Handle MX priority
+    if [[ "$type" == "MX" ]]; then
+        local priority="${5:-10}"
+        ttl="${6:-3600}"
+        params="
+            <param><value><struct>
+                <member><name>domain</name><value><string>$domain</string></value></member>
+                <member><name>type</name><value><string>$type</string></value></member>
+                <member><name>name</name><value><string>$name</string></value></member>
+                <member><name>content</name><value><string>$content</string></value></member>
+                <member><name>prio</name><value><int>$priority</int></value></member>
+                <member><name>ttl</name><value><int>$ttl</int></value></member>
+            </struct></value></param>"
+    fi
+
+    local response
+    response=$(xmlrpc_call "nameserver.createRecord" "$params")
+
+    if echo "$response" | grep -q "<name>code</name><value><int>1000</int>"; then
+        local record_id
+        record_id=$(echo "$response" | grep -oP '(?<=<name>id</name><value><int>).*?(?=</int>)' | head -1)
+        success "Record created: $type $name.$domain -> $content (ID: $record_id)"
+    else
+        local error_msg
+        error_msg=$(echo "$response" | grep -oP '(?<=<name>msg</name><value><string>).*?(?=</string>)' | head -1)
+        error "Failed to create record: $error_msg"
+    fi
+}
+
+# Delete DNS record
+cmd_delete() {
+    local domain="${1:-}"
+    local record_id="${2:-}"
+
+    [[ -z "$domain" || -z "$record_id" ]] && error "Usage: inwx delete <domain> <id>"
+
+    login
+
+    local response
+    response=$(xmlrpc_call "nameserver.deleteRecord" "
+        <param><value><struct>
+            <member><name>id</name><value><int>$record_id</int></value></member>
+        </struct></value></param>")
+
+    if echo "$response" | grep -q "<name>code</name><value><int>1000</int>"; then
+        success "Record $record_id deleted"
+    else
+        local error_msg
+        error_msg=$(echo "$response" | grep -oP '(?<=<name>msg</name><value><string>).*?(?=</string>)' | head -1)
+        error "Failed to delete record: $error_msg"
+    fi
+}
+
+# Update DNS record
+cmd_update() {
+    local domain="${1:-}"
+    local record_id="${2:-}"
+    local content="${3:-}"
+
+    [[ -z "$domain" || -z "$record_id" || -z "$content" ]] && \
+        error "Usage: inwx update <domain> <id> <content>"
+
+    login
+
+    local response
+    response=$(xmlrpc_call "nameserver.updateRecord" "
+        <param><value><struct>
+            <member><name>id</name><value><int>$record_id</int></value></member>
+            <member><name>content</name><value><string>$content</string></value></member>
+        </struct></value></param>")
+
+    if echo "$response" | grep -q "<name>code</name><value><int>1000</int>"; then
+        success "Record $record_id updated"
+    else
+        local error_msg
+        error_msg=$(echo "$response" | grep -oP '(?<=<name>msg</name><value><string>).*?(?=</string>)' | head -1)
+        error "Failed to update record: $error_msg"
+    fi
+}
+
+# Show help
+show_help() {
+    cat <<EOF
+inwx - INWX DNS API CLI
+
+Usage:
+  inwx list <domain>                              List DNS records
+  inwx add <domain> <type> <name> <content> [ttl] Add DNS record
+  inwx delete <domain> <id>                       Delete DNS record
+  inwx update <domain> <id> <content>             Update DNS record
+
+Examples:
+  inwx list fillipsveen.no
+  inwx add fillipsveen.no TXT _dmarc "v=DMARC1; p=none"
+  inwx add fillipsveen.no A www 192.168.1.1
+  inwx add fillipsveen.no MX @ mail.example.com 10
+  inwx delete fillipsveen.no 12345
+  inwx update fillipsveen.no 12345 "new content"
+
+Authentication:
+  Credentials are read from 1Password:
+  - op://Development/INWX/username
+  - op://Development/INWX/password
+EOF
+}
+
+# Main
+case "${1:-}" in
+    list)   shift; cmd_list "$@" ;;
+    add)    shift; cmd_add "$@" ;;
+    delete) shift; cmd_delete "$@" ;;
+    update) shift; cmd_update "$@" ;;
+    -h|--help|help|"") show_help ;;
+    *)      error "Unknown command: $1. Use 'inwx --help' for usage." ;;
+esac
