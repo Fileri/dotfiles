@@ -1,7 +1,7 @@
 # Taskwarrior configuration
 # Managed by chezmoi - do not edit directly
 
-# Sync configuration (taskwarrior-sync-server on PAI)
+# Sync configuration (hive-proxy → hive.v10b.no)
 {{ if stat (joinPath .chezmoi.homeDir ".config/op/config") -}}
 {{ $serverUrl := onepasswordRead "op://Development/taskwarrior-sync/Section_si4yhmlsgrftrtvblbxtlrx4xa/server_url" -}}
 {{ $clientId := onepasswordRead "op://Development/taskwarrior-sync/Section_si4yhmlsgrftrtvblbxtlrx4xa/client_id" -}}
@@ -10,3 +10,40 @@ sync.server.url={{ $serverUrl }}
 sync.server.client_id={{ $clientId }}
 sync.encryption_secret={{ $syncSecret }}
 {{ end }}
+
+# Custom reports (matching Taskchamp Things-style views)
+
+# Focus: priority tasks tagged +focus
+report.focus.description=Focus tasks (tagged +focus)
+report.focus.columns=id,project,description.count,due.relative,priority
+report.focus.labels=ID,Project,Description,Due,Pri
+report.focus.filter=status:pending +focus
+report.focus.sort=due+,priority-
+
+# Today: tasks due today + overdue
+report.today.description=Today and overdue tasks
+report.today.columns=id,project,description.count,due.relative,priority
+report.today.labels=ID,Project,Description,Due,Pri
+report.today.filter=status:pending (due:today or +OVERDUE)
+report.today.sort=due+,priority-
+
+# Upcoming: tasks due within the next 7 days (excluding today)
+report.upcoming.description=Tasks due in the next 7 days
+report.upcoming.columns=id,project,description.count,due,priority
+report.upcoming.labels=ID,Project,Description,Due,Pri
+report.upcoming.filter=status:pending due.after:today due.before:8d
+report.upcoming.sort=due+,priority-
+
+# Anytime: pending tasks with no due date (backlog)
+report.anytime.description=Tasks with no due date
+report.anytime.columns=id,project,description.count,priority,tags
+report.anytime.labels=ID,Project,Description,Pri,Tags
+report.anytime.filter=status:pending due:
+report.anytime.sort=project+,priority-
+
+# Someday: tasks tagged +someday
+report.someday.description=Someday/maybe tasks
+report.someday.columns=id,project,description.count,priority
+report.someday.labels=ID,Project,Description,Pri
+report.someday.filter=status:pending +someday
+report.someday.sort=project+,priority-
